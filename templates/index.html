@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turn-based Game</title>
+    <style>
+        .board { display: grid; grid-template-columns: repeat(5, 100px); gap: 5px; }
+        .cell { width: 100px; height: 100px; border: 1px solid #000; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+    </style>
+</head>
+<body>
+    <div id="board" class="board"></div>
+    <script>
+        const playerName = prompt("Enter your player name (Player1 or Player2):");
+        const ws = new WebSocket('ws://localhost:6789');
+        
+        ws.onopen = () => {
+            ws.send(playerName);  // Send player name to server upon connection
+        };
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'update') {
+                updateBoard(data.state);
+            } else if (data.error) {
+                alert(data.error);
+            }
+        };
+
+        function updateBoard(state) {
+            const boardDiv = document.getElementById('board');
+            boardDiv.innerHTML = '';  // Clear the board
+            state.board.forEach((row, x) => {
+                row.forEach((cell, y) => {
+                    const cellDiv = document.createElement('div');
+                    cellDiv.className = 'cell';
+                    cellDiv.innerText = cell;
+                    cellDiv.onclick = () => makeMove(x, y);
+                    boardDiv.appendChild(cellDiv);
+                });
+            });
+        }
+
+        function makeMove(x, y) {
+            const move = { x, y, player: playerName };
+            ws.send(JSON.stringify(move));  // Send move to server
+        }
+    </script>
+</body>
+</html>
